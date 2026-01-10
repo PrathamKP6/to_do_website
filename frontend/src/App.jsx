@@ -1,6 +1,6 @@
 import { Route, Routes } from "react-router-dom"
 import { HomePage } from './pages/HomePage'
-import { CreatePage } from './pages/CreatePage'
+import  CreatePage  from './pages/CreatePage'
 import { NoteDetailPage } from './pages/NoteDetailPage'
 import toast from "react-hot-toast"
 
