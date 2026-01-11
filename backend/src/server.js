@@ -1,27 +1,47 @@
-import express from "express"
-import notesRoutes from "./routes/notesRoutes.js"
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import path from "path";
+
+import notesRoutes from "./routes/notesRoutes.js";
 import { connectDB } from "./config/db.js";
-import dotenv from "dotenv"
-import rateLimiter from "./middleware/ratelimiter.js";
+import rateLimiter from "./middleware/rateLimiter.js";
 
-dotenv.config()
-const app= express();
+dotenv.config();
 
-const port= process.env.PORT || 5001;
+const app = express();
+const PORT = process.env.PORT || 5001;
+const __dirname = path.resolve();
 
+// middleware
+if (process.env.NODE_ENV !== "production") {
+  app.use(
+    cors({
+      origin: "http://localhost:5173",
+    })
+  );
+}
+app.use(express.json()); // this middleware will parse JSON bodies: req.body
+app.use(rateLimiter);
 
+// our simple custom middleware
+// app.use((req, res, next) => {
+//   console.log(`Req method is ${req.method} & Req URL is ${req.url}`);
+//   next();
+// });
 
-app.use(express.json()) //middleware
-app.use(rateLimiter)
-app.use( (req, res, next)=>{
-    console.log(`Req method is ${req.method} and request url is ${req.url}`);
-    next();
+app.use("/api/notes", notesRoutes);
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+  });
+}
+
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log("Server started on PORT:", PORT);
+  });
 });
-app.use("/api/notes", notesRoutes)
-
-connectDB().then( () => {
-    app.listen(port, ()=>{
-        console.log("Server listening on port ", port)
-    });
-})
-// mongodb+srv://prathamkpsagar_db_user:kXArS7zREaCzK8IU@cluster0.uivwbdk.mongodb.net/?appName=Cluster0
