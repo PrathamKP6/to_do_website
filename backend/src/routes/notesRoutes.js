@@ -1,8 +1,12 @@
 import express from "express";
 import { createANotes, deleteANote, getAllNotes, getNoteById, updateANote } from "../controllers/notesController.js";
+import authenticateUser from "../middleware/authMiddleware.js";
+import userRateLimiter from "../middleware/userRateLimiter.js";
 
 const router= express.Router();
 
+router.use(authenticateUser);
+router.use(userRateLimiter);
 
 router.get("/", getAllNotes);
 

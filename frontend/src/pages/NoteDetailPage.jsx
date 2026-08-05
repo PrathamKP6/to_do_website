@@ -71,6 +71,24 @@ const NoteDetailPage = () => {
     );
   }
 
+  if (!note) {
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center px-4">
+        <div className="card bg-base-100 w-full max-w-md shadow-xl">
+          <div className="card-body text-center gap-4">
+            <h2 className="card-title justify-center text-2xl">Note not found</h2>
+            <p className="text-base-content/70">The note could not be loaded or no longer exists.</p>
+            <div className="card-actions justify-center">
+              <Link to="/" className="btn btn-primary">
+                Back to Notes
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-base-200">
       <div className="container mx-auto px-4 py-8">

@@ -2,7 +2,7 @@ import Note from "../models/Note.js"
 
 export async function getAllNotes (req, res){
     try {
-        const notes = await Note.find().sort({createdAt: -1}) //fetches all notes -1 will give newest first
+        const notes = await Note.find({ userId: req.user._id }).sort({createdAt: -1}) //fetches all notes -1 will give newest first
         res.status(200).json(notes);
     } catch (error) {
         console.log("Error in getAllNotes controller", error)
@@ -12,11 +12,11 @@ export async function getAllNotes (req, res){
 
 export async function getNoteById (req, res){
     try {
-        const notes = await Note.findById(req.params.id);
+        const notes = await Note.findOne({ _id: req.params.id, userId: req.user._id });
         if(!notes) return res.status(404).json({message: "Note not found"});
         res.status(200).json(notes);
     } catch (error) {
-        onsole.log("Error in getNoteById controller", error)
+        console.log("Error in getNoteById controller", error)
         res.status(500).json( { message : "Internal Server Error"} )
     }
 }
@@ -24,7 +24,7 @@ export async function getNoteById (req, res){
 export async function createANotes (req, res){
     try {
         const {title, content} = req.body;
-        const note = new Note({title,content})
+        const note = new Note({title,content, userId: req.user._id})
 
         const savedNote = await note.save()
         res.status(201).json(savedNote);
@@ -37,8 +37,12 @@ export async function createANotes (req, res){
 export async function updateANote(req, res){
     try {
         const {title, content}= req.body;
-        const updatedNote = await Note.findByIdAndUpdate(req.params.id, {title,content}, { new:true})
-        if(!updateANote) return res.status(404).json({message: "Note not found"})
+        const updatedNote = await Note.findOneAndUpdate(
+          { _id: req.params.id, userId: req.user._id },
+          { title, content },
+          { new:true }
+        )
+        if(!updatedNote) return res.status(404).json({message: "Note not found"})
         res.status(200).json(updatedNote)
     } catch (error) {
         console.log("Error in updateANote controller", error)
@@ -48,8 +52,7 @@ export async function updateANote(req, res){
 
 export async function deleteANote(req, res){
     try {
-        const {title, content} = req.body;
-        const deletedNote = await Note.findByIdAndDelete(req.params.id)
+        const deletedNote = await Note.findOneAndDelete({ _id: req.params.id, userId: req.user._id })
         if(!deletedNote) return res.status(404).json({message:"Note not found"})
         res.status(200).json(deletedNote)
     } catch (error) {

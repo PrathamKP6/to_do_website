@@ -2,27 +2,37 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import cookieParser from "cookie-parser";
 
 import notesRoutes from "./routes/notesRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import { connectDB } from "./config/db.js";
-import rateLimiter from "./middleware/ratelimiter.js";
+import { ensureLegacyUserAndNotes } from "./utils/legacyData.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 const __dirname = path.resolve();
+const allowedOrigins = new Set(
+  [process.env.FRONTEND_URL, "http://localhost:5173", "http://127.0.0.1:5173"].filter(Boolean)
+);
 
 // middleware
-if (process.env.NODE_ENV !== "production") {
-  app.use(
-    cors({
-      origin: "http://localhost:5173",
-    })
-  );
-}
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json()); // this middleware will parse JSON bodies: req.body
-app.use(rateLimiter);
+app.use(cookieParser());
 
 // our simple custom middleware
 // app.use((req, res, next) => {
@@ -30,6 +40,7 @@ app.use(rateLimiter);
 //   next();
 // });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/notes", notesRoutes);
 
 if (process.env.NODE_ENV === "production") {
@@ -41,7 +52,14 @@ if (process.env.NODE_ENV === "production") {
 }
 
 connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log("Server started on PORT:", PORT);
-  });
+  ensureLegacyUserAndNotes()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log("Server started on PORT:", PORT);
+      });
+    })
+    .catch((error) => {
+      console.error("Failed to initialize legacy user data", error);
+      process.exit(1);
+    });
 });
